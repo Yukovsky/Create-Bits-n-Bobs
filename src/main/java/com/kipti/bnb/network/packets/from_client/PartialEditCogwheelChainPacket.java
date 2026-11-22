@@ -32,6 +32,8 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
+import net.neoforged.neoforge.common.util.BlockSnapshot;
+import net.neoforged.neoforge.event.EventHooks;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
@@ -143,7 +145,14 @@ public record PartialEditCogwheelChainPacket(
         if (CogwheelChainCandidate.getForBlock(placementState) == null)
             return;
 
+        final BlockSnapshot placementSnapshot = BlockSnapshot.create(
+                level.dimension(), level, this.newCogwheelPos, Block.UPDATE_ALL
+        );
         level.setBlock(this.newCogwheelPos, placementState, Block.UPDATE_ALL);
+        if (EventHooks.onBlockPlace(player, placementSnapshot, this.hitDirection)) {
+            placementSnapshot.restore();
+            return;
+        }
 
         final CogwheelChainPartialEdit editContext = this.resolveEditContext(existingChain);
         if (editContext == null) {
